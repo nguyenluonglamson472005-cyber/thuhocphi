@@ -7,27 +7,21 @@ st.set_page_config(
     page_title="Quản lý Dạy thêm & Học phí", page_icon="📚", layout="wide"
 )
 
-# --- CSS TÙY CHỈNH GIAO DIỆN HIỆN ĐẠI (CLEAN UI) ---
+# --- CSS TÙY CHỈNH GIAO DIỆN HIỆN ĐẠI ---
 st.markdown(
     """
     <style>
-    /* Màu nền chính nhẹ nhàng */
     .stApp {
         background-color: #f8fafc;
     }
     
-    /* Tùy chỉnh khung chứa số liệu (Metrics) */
+    /* Tùy chỉnh khung chứa số liệu (Metrics) chung */
     div[data-testid="stMetric"] {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
         padding: 16px;
         border-radius: 14px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        transition: transform 0.2s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     /* Khung thông tin tác giả ở Sidebar */
@@ -55,28 +49,58 @@ st.markdown(
         color: #334155;
     }
 
-    /* Tùy chỉnh các khối thông báo / kết quả tra cứu */
-    .result-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
-        margin-top: 15px;
+    /* KHẺ THẺ TRA CỨU HỌC SINH SIÊU ĐẸP */
+    .student-card {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+        margin-top: 20px;
+        font-family: sans-serif;
+    }
+    .student-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    .student-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1e3a8a;
+    }
+    
+    /* Huy hiệu trạng thái học phí */
+    .badge-paid {
+        background-color: #dcfce7;
+        color: #166534;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        border: 1px solid #bbf7d0;
+    }
+    .badge-unpaid {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        border: 1px solid #fecaca;
     }
 
-    /* Tiêu đề ứng dụng */
     h1, h2, h3 {
         color: #0f172a;
         font-family: 'Inter', sans-serif;
     }
     
-    /* Tùy chỉnh nút bấm */
     .stButton>button {
         border-radius: 8px;
         font-weight: 600;
-        padding: 0.5rem 1rem;
-        transition: all 0.2s;
     }
     </style>
     """,
@@ -87,7 +111,6 @@ st.markdown(
 DATA_FILE = "hoc_sinh.csv"
 
 
-# Hàm tải dữ liệu
 def load_data():
     if os.path.exists(DATA_FILE):
         return pd.read_csv(DATA_FILE)
@@ -106,15 +129,12 @@ def load_data():
         return df
 
 
-# Hàm lưu dữ liệu
 def save_data(df):
     df.to_csv(DATA_FILE, index=False)
 
 
-# Khởi tạo session_state
 if "students" not in st.session_state:
     st.session_state.students = load_data()
-
 
 # --- THANH BÊN (SIDEBAR) ---
 st.sidebar.title("🔐 Hệ thống Quản lý")
@@ -127,7 +147,6 @@ is_teacher = admin_password == MY_PASSWORD
 
 st.sidebar.divider()
 
-# Khung thông tin tác giả cải tiến giao diện
 st.sidebar.markdown(
     """
     <div class="author-box">
@@ -139,7 +158,6 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True,
 )
-
 
 # ==========================================
 # 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN
@@ -336,7 +354,7 @@ if is_teacher:
                 st.success("Tuyệt vời! Tất cả học sinh đều đã nộp học phí.")
 
 # ==========================================
-# 2. GIAO DIỆN DÀNH CHO HỌC SINH (TỰ GÕ TÊN)
+# 2. GIAO DIỆN DÀNH CHO HỌC SINH (TỰ GÕ TÊN - CẢI TIẾN HIỂN THỊ)
 # ==========================================
 else:
     st.title("🎓 Tra cứu thông tin học tập & học phí cá nhân")
@@ -350,7 +368,7 @@ else:
             "Vui lòng **nhập đầy đủ họ và tên** của bạn vào ô dưới đây để tra cứu kết quả:"
         )
 
-        typed_name = st.text_input("🔍 Họ và tên của bạn:")
+        typed_name = st.text_input("🔍 Nhập họ và tên của bạn:")
 
         if typed_name:
             df_students = st.session_state.students
@@ -367,37 +385,44 @@ else:
                     fee_per_session = student_info["Học phí/Buổi (VNĐ)"]
                     total_sessions = student_info["Số buổi đã học"]
                     status = student_info["Trạng thái học phí"]
-
                     total_money = total_sessions * fee_per_session
 
-                    # Bọc kết quả vào trong khung đẹp mắt
-                    st.markdown(
-                        f"""
-                        <div class="result-card">
-                            <h3>Kết quả tra cứu cho: <span style="color:#2563eb;">{s_name}</span></h3>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric(
-                        "Môn học", subject if subject else "Chưa cập nhật"
-                    )
-                    col2.metric("Tổng số buổi đã học", f"{total_sessions} buổi")
-                    col3.metric(
-                        "Tổng số tiền cần nộp", f"{total_money:,.0f} VNĐ"
-                    )
-
-                    st.markdown("<br>", unsafe_allow_html=True)
+                    # Xác định nhãn trạng thái học phí đẹp mắt
                     if status == "Đã nộp":
-                        st.success(
-                            "✅ **Trạng thái học phí:** Bạn đã hoàn thành học phí đầy đủ."
+                        badge_html = '<span class="badge-paid">✅ Đã hoàn thành học phí</span>'
+                        status_msg = (
+                            "Tuyệt vời! Bạn đã hoàn thành học phí đầy đủ."
                         )
                     else:
-                        st.error(
-                            "❌ **Trạng thái học phí:** Bạn chưa nộp học phí. Vui lòng thanh toán cho giáo viên."
+                        badge_html = '<span class="badge-unpaid">❌ Chưa nộp học phí</span>'
+                        status_msg = (
+                            "Vui lòng thanh toán học phí sớm cho giáo viên."
                         )
+
+                    # Gom tất cả vào một Thẻ Thống Nhất (Card)
+                    card_html = f"""
+                    <div class="student-card">
+                        <div class="student-header">
+                            <div class="student-title">👤 {s_name}</div>
+                            <div>{badge_html}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; gap: 15px; margin-top: 15px;">
+                            <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="color: #64748b; font-size: 13px; font-weight: 600;">MÔN HỌC</div>
+                                <div style="color: #0f172a; font-size: 18px; font-weight: bold; margin-top: 5px;">{subject if subject else "Chưa cập nhật"}</div>
+                            </div>
+                            <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="color: #64748b; font-size: 13px; font-weight: 600;">SỐ BUỔI ĐÃ HỌC</div>
+                                <div style="color: #0f172a; font-size: 18px; font-weight: bold; margin-top: 5px;">{total_sessions} buổi</div>
+                            </div>
+                            <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="color: #64748b; font-size: 13px; font-weight: 600;">TỔNG TIỀN CẦN NỘP</div>
+                                <div style="color: #2563eb; font-size: 18px; font-weight: bold; margin-top: 5px;">{total_money:,.0f} VNĐ</div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
             else:
                 st.error(
                     f"Không tìm thấy học sinh nào có tên khớp với **'{typed_name}'**. Vui lòng kiểm tra lại chính tả!"
