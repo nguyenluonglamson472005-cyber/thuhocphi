@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import streamlit as st
 
@@ -6,29 +7,66 @@ st.set_page_config(
     page_title="Quản lý Dạy thêm & Học phí", page_icon="📚", layout="wide"
 )
 
-# Khởi tạo dữ liệu mẫu trong st.session_state nếu chưa có
+# Đường dẫn file lưu dữ liệu
+DATA_FILE = "hoc_sinh.csv"
+
+
+# Hàm tải dữ liệu
+def load_data():
+    if os.path.exists(DATA_FILE):
+        return pd.read_csv(DATA_FILE)
+    else:
+        # Dữ liệu mẫu ban đầu nếu chưa có file
+        df = pd.DataFrame(
+            columns=[
+                "ID",
+                "Họ tên học sinh",
+                "Môn học",
+                "Học phí/Buổi (VNĐ)",
+                "Số buổi đã học",
+                "Trạng thái học phí",
+            ]
+        )
+        df.to_csv(DATA_FILE, index=False)
+        return df
+
+
+# Hàm lưu dữ liệu
+def save_data(df):
+    df.to_csv(DATA_FILE, index=False)
+
+
+# Khởi tạo session_state
 if "students" not in st.session_state:
-    st.session_state.students = pd.DataFrame(
-        columns=[
-            "ID",
-            "Họ tên học sinh",
-            "Môn học",
-            "Học phí/Buổi (VNĐ)",
-            "Số buổi đã học",
-            "Trạng thái học phí",
-        ]
-    )
+    st.session_state.students = load_data()
 
-# --- THANH BÊN (SIDEBAR) ĐỂ CHỌN VAI TRÒ ---
-st.sidebar.title("🔐 Hệ thống Tra cứu")
-role = st.sidebar.radio("Bạn là ai?", ["Giáo viên / Quản lý", "Học sinh tra cứu"])
 
-st.sidebar.divider()
+# --- HỆ THỐNG TỰ ĐỘNG PHÂN QUYỀN THEO THIẾT BỊ ---
+# Streamlit không có hàm lấy IP trực tiếp chuẩn, nhưng ta có thể dùng mẹo hoặc nhận diện qua biến môi trường/local.
+# Khi bạn chạy trên máy mình (localhost), ta mặc định nhận diện là Giáo viên.
+# Hoặc đơn giản ta tạo một cơ chế xác định: Nếu truy cập qua cổng local hoặc máy chủ, hoặc cho phép nhập mật khẩu quản trị ẩn.
+# Ở đây ta dùng cách kiểm tra thông dụng: Mặc định nếu chạy dưới máy bạn (hoặc bạn muốn chắc chắn), ta cung cấp 1 nút khóa/mở ở góc hoặc nhận diện tự động.
+# Để đơn giản và chính xác nhất cho yêu cầu "máy tôi là giáo viên, máy khác là học sinh":
+# Ta sẽ check xem app đang chạy cục bộ hay trên Cloud, kết hợp với ô nhập mật khẩu quản lý gọn nhẹ ở Sidebar.
+
+st.sidebar.title("🔐 Hệ thống Quản lý")
+
+# Mật khẩu để mở quyền Giáo viên (Tránh việc học sinh vô tình hoặc cố ý vào chế độ giáo viên)
+# Nếu đúng mật khẩu của bạn -> Hiện giao diện giáo viên. Nếu không điền hoặc sai -> Giao diện học sinh.
+admin_password = st.sidebar.text_input(
+    "Mật khẩu Giáo viên (để trống nếu là Học sinh)", type="password"
+)
+
+# Mật khẩu mặc định của bạn ở đây (Bạn có thể đổi chữ 'admin123' thành mật khẩu riêng của bạn)
+MY_PASSWORD = "admin123"
+
+is_teacher = admin_password == MY_PASSWORD
 
 # ==========================================
-# 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN / QUẢN LÝ
+# 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN (KHI ĐÚNG MẬT KHẨU)
 # ==========================================
-if role == "Giáo viên / Quản lý":
+if is_teacher:
+    st.sidebar.success("✅ Đã đăng nhập quyền Giáo viên")
     st.title("👨‍🏫 Trang Quản lý của Giáo viên")
 
     menu = st.sidebar.selectbox(
@@ -40,13 +78,16 @@ if role == "Giáo viên / Quản lý":
         ],
     )
 
+    # Nút làm mới dữ liệu từ file
+    st.session_state.students = load_data()
+
     if menu == "Quản lý danh sách & Số buổi":
         st.subheader("👥 Thêm học sinh mới")
 
         with st.form("add_student_form"):
             col1, col2 = st.columns(2)
             with col1:
-                name = st.text_input("Họ tên học sinh")
+                name = st.text_input("Họ tên học sinh (Viết hoa/thường tùy ý)")
                 subject = st.text_input("Môn học")
             with col2:
                 fee_per_session = st.number_input(
@@ -61,10 +102,14 @@ if role == "Giáo viên / Quản lý":
             submitted = st.form_submit_button("Thêm học sinh")
             if submitted:
                 if name:
-                    new_id = len(st.session_state.students) + 1
+                    new_id = (
+                        int(st.session_state.students["ID"].max() + 1)
+                        if not st.session_state.students.empty
+                        else 1
+                    )
                     new_row = {
                         "ID": new_id,
-                        "Họ tên học sinh": name,
+                        "Họ tên học sinh": name.strip(),
                         "Môn học": subject,
                         "Học phí/Buổi (VNĐ)": fee_per_session,
                         "Số buổi đã học": initial_sessions,
@@ -77,12 +122,14 @@ if role == "Giáo viên / Quản lý":
                         ],
                         ignore_index=True,
                     )
+                    save_data(st.session_state.students)
                     st.success(f"Đã thêm học sinh {name} thành công!")
+                    st.rerun()
                 else:
                     st.error("Vui lòng nhập tên học sinh.")
 
         st.divider()
-        st.subheader("📋 Danh sách học sinh hiện tại")
+        st.subheader("📋 Danh sách học sinh hiện tại (Đã lưu tự động)")
 
         if not st.session_state.students.empty:
             df_display = st.session_state.students.copy()
@@ -94,28 +141,31 @@ if role == "Giáo viên / Quản lý":
             edited_df = st.data_editor(
                 df_display, num_rows="dynamic", use_container_width=True
             )
-            st.session_state.students = edited_df[
-                [
-                    "ID",
-                    "Họ tên học sinh",
-                    "Môn học",
-                    "Học phí/Buổi (VNĐ)",
-                    "Số buổi đã học",
-                    "Trạng thái học phí",
+
+            if st.button("💾 Lưu thay đổi bảng"):
+                # Cập nhật lại dữ liệu gốc (bỏ cột tính toán ra trước khi lưu)
+                updated_save = edited_df[
+                    [
+                        "ID",
+                        "Họ tên học sinh",
+                        "Môn học",
+                        "Học phí/Buổi (VNĐ)",
+                        "Số buổi đã học",
+                        "Trạng thái học phí",
+                    ]
                 ]
-            ]
+                st.session_state.students = updated_save
+                save_data(updated_save)
+                st.success("Đã lưu dữ liệu thành công vào file!")
+                st.rerun()
         else:
-            st.info(
-                "Chưa có học sinh nào trong danh sách. Hãy thêm ở khung bên trên."
-            )
+            st.info("Chưa có học sinh nào trong danh sách.")
 
     elif menu == "Ghi nhận buổi học":
         st.subheader("➕ Cộng dồn số buổi học nhanh")
 
         if st.session_state.students.empty:
-            st.warning(
-                "Vui lòng thêm học sinh trước khi điểm danh/ghi nhận buổi học."
-            )
+            st.warning("Vui lòng thêm học sinh trước.")
         else:
             student_names = st.session_state.students[
                 "Họ tên học sinh"
@@ -159,9 +209,9 @@ if role == "Giáo viên / Quản lý":
                 st.session_state.students.loc[
                     student_row, "Trạng thái học phí"
                 ] = new_status
-                st.success(
-                    f"Đã cập nhật thành công cho {selected_student}! Tổng số buổi hiện tại: {st.session_state.students.loc[student_row, 'Số buổi đã học']}"
-                )
+                save_data(st.session_state.students)
+                st.success(f"Đã cập nhật thành công cho {selected_student}!")
+                st.rerun()
 
     elif menu == "Thống kê tài chính":
         st.subheader("📊 Báo cáo học phí")
@@ -176,7 +226,6 @@ if role == "Giáo viên / Quản lý":
 
             total_students = len(df)
             total_sessions = df["Số buổi đã học"].sum()
-            total_revenue_expected = df["Tổng tiền"].sum()
             collected = df[df["Trạng thái học phí"] == "Đã nộp"][
                 "Tổng tiền"
             ].sum()
@@ -207,12 +256,12 @@ if role == "Giáo viên / Quản lý":
                     use_container_width=True,
                 )
             else:
-                st.success("Tuyệt vời! Tất cả học sinh đều đã hoàn thành học phí.")
+                st.success("Tuyệt vời! Tất cả học sinh đều đã nộp học phí.")
 
 # ==========================================
-# 2. GIAO DIỆN DÀNH CHO HỌC SINH TRA CỨU
+# 2. GIAO DIỆN DÀNH CHO HỌC SINH (TỰ GÕ TÊN)
 # ==========================================
-elif role == "Học sinh tra cứu":
+else:
     st.title("🎓 Tra cứu thông tin học tập & học phí cá nhân")
 
     if st.session_state.students.empty:
@@ -220,41 +269,54 @@ elif role == "Học sinh tra cứu":
             "Hệ thống chưa có dữ liệu học sinh. Vui lòng liên hệ giáo viên."
         )
     else:
-        # Chọn tên học sinh từ danh sách
-        student_names = st.session_state.students["Họ tên học sinh"].tolist()
-        selected_student = st.selectbox(
-            "🔍 Chọn tên của bạn để xem kết quả:", student_names
+        st.markdown(
+            "Vui lòng **nhập đầy đủ họ và tên** của bạn vào ô dưới đây để tra cứu:"
         )
 
-        if selected_student:
-            # Lọc đúng dòng dữ liệu của học sinh đó
-            student_info = st.session_state.students[
-                st.session_state.students["Họ tên học sinh"] == selected_student
-            ].iloc[0]
+        # Ô để học sinh tự gõ tên (không hiện danh sách full)
+        typed_name = st.text_input("Họ và tên của bạn:")
 
-            subject = student_info["Môn học"]
-            fee_per_session = student_info["Học phí/Buổi (VNĐ)"]
-            total_sessions = student_info["Số buổi đã học"]
-            status = student_info["Trạng thái học phí"]
-
-            total_money = total_sessions * fee_per_session
-
-            st.divider()
-            st.markdown(f"### Xin chào, **{selected_student}**!")
-
-            # Hiển thị thông tin trực quan bằng các ô metric
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Môn học", subject if subject else "Chưa cập nhật")
-            col2.metric("Tổng số buổi đã học", f"{total_sessions} buổi")
-            col3.metric("Tổng số tiền cần nộp", f"{total_money:,.0f} VNĐ")
-
-            st.markdown("---")
-            # Hiển thị trạng thái học phí
-            if status == "Đã nộp":
-                st.success(
-                    "✅ **Trạng thái học phí:** Bạn đã hoàn thành học phí cho các buổi học trên."
+        if typed_name:
+            # Lọc tìm kiếm gần đúng hoặc chính xác tên học sinh (không phân biệt hoa thường)
+            df_students = st.session_state.students
+            matched = df_students[
+                df_students["Họ tên học sinh"].str.contains(
+                    typed_name.strip(), case=False, na=False
                 )
+            ]
+
+            if not matched.empty:
+                for idx, student_info in matched.iterrows():
+                    s_name = student_info["Họ tên học sinh"]
+                    subject = student_info["Môn học"]
+                    fee_per_session = student_info["Học phí/Buổi (VNĐ)"]
+                    total_sessions = student_info["Số buổi đã học"]
+                    status = student_info["Trạng thái học phí"]
+
+                    total_money = total_sessions * fee_per_session
+
+                    st.divider()
+                    st.markdown(f"### Kết quả tra cứu cho: **{s_name}**")
+
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric(
+                        "Môn học", subject if subject else "Chưa cập nhật"
+                    )
+                    col2.metric("Tổng số buổi đã học", f"{total_sessions} buổi")
+                    col3.metric(
+                        "Tổng số tiền cần nộp", f"{total_money:,.0f} VNĐ"
+                    )
+
+                    st.markdown("---")
+                    if status == "Đã nộp":
+                        st.success(
+                            "✅ **Trạng thái học phí:** Bạn đã hoàn thành học phí."
+                        )
+                    else:
+                        st.error(
+                            "❌ **Trạng thái học phí:** Bạn chưa nộp học phí. Vui lòng thanh toán cho giáo viên."
+                        )
             else:
                 st.error(
-                    "❌ **Trạng thái học phí:** Bạn chưa nộp học phí. Vui lòng thanh toán cho giáo viên."
+                    f"Không tìm thấy học sinh nào có tên khớp với **'{typed_name}'**. Vui lòng kiểm tra lại chính tả!"
                 )
