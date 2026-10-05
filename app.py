@@ -106,13 +106,10 @@ st.sidebar.markdown("### Thông tin tác giả")
 st.sidebar.markdown(
     """
     <div class="author-box">
-        <div class="author-name">Nguyễn Bùi Trường Vũ (Chính)</div>
-        <div class="author-text">Nguyễn Lương Lâm Sơn</div>
-        <div class="author-text">Võ Đăng Khoa</div>
-        <div class="author-text">Hoàng Kim Gia Bảo</div>
+        <div class="author-text">Thầy Sơn dạy Toán</div>
         <br>
-        <div class="author-text"><b>SĐT:</b> 0854085229</div>
-        <div class="author-text"><b>Đơn vị:</b> Sinh viên năm 4 Khoa Toán DHS</div>
+        <div class="author-text"><b>SĐT:</b> 0387533027</div>
+        <div class="author-text"><b>Địa chỉ:</b> Khe Sanh, Quảng Trị</div>
     </div>
     """,
     unsafe_allow_html=True,
