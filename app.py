@@ -16,7 +16,6 @@ def load_data():
     if os.path.exists(DATA_FILE):
         return pd.read_csv(DATA_FILE)
     else:
-        # Dữ liệu mẫu ban đầu nếu chưa có file
         df = pd.DataFrame(
             columns=[
                 "ID",
@@ -41,26 +40,52 @@ if "students" not in st.session_state:
     st.session_state.students = load_data()
 
 
-# --- HỆ THỐNG TỰ ĐỘNG PHÂN QUYỀN THEO THIẾT BỊ ---
-# Streamlit không có hàm lấy IP trực tiếp chuẩn, nhưng ta có thể dùng mẹo hoặc nhận diện qua biến môi trường/local.
-# Khi bạn chạy trên máy mình (localhost), ta mặc định nhận diện là Giáo viên.
-# Hoặc đơn giản ta tạo một cơ chế xác định: Nếu truy cập qua cổng local hoặc máy chủ, hoặc cho phép nhập mật khẩu quản trị ẩn.
-# Ở đây ta dùng cách kiểm tra thông dụng: Mặc định nếu chạy dưới máy bạn (hoặc bạn muốn chắc chắn), ta cung cấp 1 nút khóa/mở ở góc hoặc nhận diện tự động.
-# Để đơn giản và chính xác nhất cho yêu cầu "máy tôi là giáo viên, máy khác là học sinh":
-# Ta sẽ check xem app đang chạy cục bộ hay trên Cloud, kết hợp với ô nhập mật khẩu quản lý gọn nhẹ ở Sidebar.
-
+# --- THANH BÊN (SIDEBAR) ĐỂ CHỌN VAI TRÒ & THÔNG TIN ---
 st.sidebar.title("🔐 Hệ thống Quản lý")
 
-# Mật khẩu để mở quyền Giáo viên (Tránh việc học sinh vô tình hoặc cố ý vào chế độ giáo viên)
-# Nếu đúng mật khẩu của bạn -> Hiện giao diện giáo viên. Nếu không điền hoặc sai -> Giao diện học sinh.
 admin_password = st.sidebar.text_input(
     "Mật khẩu Giáo viên (để trống nếu là Học sinh)", type="password"
 )
-
-# Mật khẩu mặc định của bạn ở đây (Bạn có thể đổi chữ 'admin123' thành mật khẩu riêng của bạn)
 MY_PASSWORD = "admin123"
-
 is_teacher = admin_password == MY_PASSWORD
+
+st.sidebar.divider()
+
+# --- THÊM KHUNG THÔNG TIN TÁC GIẢ (THEO HÌNH MẪU) ---
+st.sidebar.markdown("### Thông tin tác giả")
+st.sidebar.markdown(
+    """
+    <style>
+    .author-box {
+        background-color: #f0f4ff;
+        border: 1px solid #d0e1fd;
+        border-radius: 12px;
+        padding: 15px;
+        color: #1f2937;
+        font-family: sans-serif;
+        margin-bottom: 20px;
+    }
+    .author-name {
+        color: #1e3a8a;
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    .author-text {
+        margin: 4px 0;
+        font-size: 14px;
+    }
+    </style>
+    <div class="author-box">
+        <div class="author-text">Nguyễn Lương Lâm Sơn</div>
+        <br>
+        <div class="author-text"><b>SĐT:</b> 0387533027</div>
+        <div class="author-text"><b>Địa chỉ:</b> Khe Sanh, Hướng Hóa, Quảng Trị</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ==========================================
 # 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN (KHI ĐÚNG MẬT KHẨU)
@@ -78,7 +103,6 @@ if is_teacher:
         ],
     )
 
-    # Nút làm mới dữ liệu từ file
     st.session_state.students = load_data()
 
     if menu == "Quản lý danh sách & Số buổi":
@@ -87,7 +111,7 @@ if is_teacher:
         with st.form("add_student_form"):
             col1, col2 = st.columns(2)
             with col1:
-                name = st.text_input("Họ tên học sinh (Viết hoa/thường tùy ý)")
+                name = st.text_input("Họ tên học sinh")
                 subject = st.text_input("Môn học")
             with col2:
                 fee_per_session = st.number_input(
@@ -143,7 +167,6 @@ if is_teacher:
             )
 
             if st.button("💾 Lưu thay đổi bảng"):
-                # Cập nhật lại dữ liệu gốc (bỏ cột tính toán ra trước khi lưu)
                 updated_save = edited_df[
                     [
                         "ID",
@@ -273,11 +296,9 @@ else:
             "Vui lòng **nhập đầy đủ họ và tên** của bạn vào ô dưới đây để tra cứu:"
         )
 
-        # Ô để học sinh tự gõ tên (không hiện danh sách full)
         typed_name = st.text_input("Họ và tên của bạn:")
 
         if typed_name:
-            # Lọc tìm kiếm gần đúng hoặc chính xác tên học sinh (không phân biệt hoa thường)
             df_students = st.session_state.students
             matched = df_students[
                 df_students["Họ tên học sinh"].str.contains(
