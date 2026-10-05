@@ -7,6 +7,56 @@ st.set_page_config(
     page_title="Quản lý Dạy thêm & Học phí", page_icon="📚", layout="wide"
 )
 
+# --- CSS TÙY CHỈNH GIAO DIỆN (THÊM KHUNG VIỀN & BO TRÒN) ---
+st.markdown(
+    """
+    <style>
+    /* Màu nền chính nhẹ nhàng */
+    .main {
+        background-color: #f8fafc;
+    }
+    
+    /* Tùy chỉnh khung chứa số liệu (Metrics) */
+    div[data-testid="stMetric"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Khung thông tin tác giả ở Sidebar */
+    .author-box {
+        background-color: #f0f4ff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 15px;
+        color: #1e293b;
+        font-family: sans-serif;
+        margin-bottom: 20px;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .author-name {
+        color: #1e3a8a;
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    .author-text {
+        margin: 4px 0;
+        font-size: 14px;
+    }
+
+    /* Tiêu đề ứng dụng */
+    h1, h2, h3 {
+        color: #0f172a;
+        font-family: sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Đường dẫn file lưu dữ liệu
 DATA_FILE = "hoc_sinh.csv"
 
@@ -40,7 +90,7 @@ if "students" not in st.session_state:
     st.session_state.students = load_data()
 
 
-# --- THANH BÊN (SIDEBAR) ĐỂ CHỌN VAI TRÒ & THÔNG TIN ---
+# --- THANH BÊN (SIDEBAR) ---
 st.sidebar.title("🔐 Hệ thống Quản lý")
 
 admin_password = st.sidebar.text_input(
@@ -51,36 +101,18 @@ is_teacher = admin_password == MY_PASSWORD
 
 st.sidebar.divider()
 
-# --- THÊM KHUNG THÔNG TIN TÁC GIẢ (THEO HÌNH MẪU) ---
+# Khung thông tin tác giả
 st.sidebar.markdown("### Thông tin tác giả")
 st.sidebar.markdown(
     """
-    <style>
-    .author-box {
-        background-color: #f0f4ff;
-        border: 1px solid #d0e1fd;
-        border-radius: 12px;
-        padding: 15px;
-        color: #1f2937;
-        font-family: sans-serif;
-        margin-bottom: 20px;
-    }
-    .author-name {
-        color: #1e3a8a;
-        font-weight: bold;
-        font-size: 16px;
-        margin-bottom: 8px;
-    }
-    .author-text {
-        margin: 4px 0;
-        font-size: 14px;
-    }
-    </style>
     <div class="author-box">
+        <div class="author-name">Nguyễn Bùi Trường Vũ (Chính)</div>
         <div class="author-text">Nguyễn Lương Lâm Sơn</div>
+        <div class="author-text">Võ Đăng Khoa</div>
+        <div class="author-text">Hoàng Kim Gia Bảo</div>
         <br>
-        <div class="author-text"><b>SĐT:</b> 0387533027</div>
-        <div class="author-text"><b>Địa chỉ:</b> Khe Sanh, Hướng Hóa, Quảng Trị</div>
+        <div class="author-text"><b>SĐT:</b> 0854085229</div>
+        <div class="author-text"><b>Đơn vị:</b> Sinh viên năm 4 Khoa Toán DHS</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -88,7 +120,7 @@ st.sidebar.markdown(
 
 
 # ==========================================
-# 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN (KHI ĐÚNG MẬT KHẨU)
+# 1. GIAO DIỆN DÀNH CHO GIÁO VIÊN
 # ==========================================
 if is_teacher:
     st.sidebar.success("✅ Đã đăng nhập quyền Giáo viên")
