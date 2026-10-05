@@ -7,12 +7,12 @@ st.set_page_config(
     page_title="Quản lý Dạy thêm & Học phí", page_icon="📚", layout="wide"
 )
 
-# --- CSS TÙY CHỈNH GIAO DIỆN (THÊM KHUNG VIỀN & BO TRÒN) ---
+# --- CSS TÙY CHỈNH GIAO DIỆN HIỆN ĐẠI (CLEAN UI) ---
 st.markdown(
     """
     <style>
     /* Màu nền chính nhẹ nhàng */
-    .main {
+    .stApp {
         background-color: #f8fafc;
     }
     
@@ -20,37 +20,63 @@ st.markdown(
     div[data-testid="stMetric"] {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        padding: 16px;
+        border-radius: 14px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
     /* Khung thông tin tác giả ở Sidebar */
     .author-box {
-        background-color: #f0f4ff;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        padding: 15px;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
+        border-radius: 14px;
+        padding: 18px;
         color: #1e293b;
         font-family: sans-serif;
         margin-bottom: 20px;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
     }
-    .author-name {
-        color: #1e3a8a;
+    .author-title {
+        color: #1e40af;
         font-weight: bold;
         font-size: 16px;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+        border-bottom: 2px solid #bfdbfe;
+        padding-bottom: 6px;
     }
     .author-text {
-        margin: 4px 0;
+        margin: 6px 0;
         font-size: 14px;
+        color: #334155;
+    }
+
+    /* Tùy chỉnh các khối thông báo / kết quả tra cứu */
+    .result-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+        margin-top: 15px;
     }
 
     /* Tiêu đề ứng dụng */
     h1, h2, h3 {
         color: #0f172a;
-        font-family: sans-serif;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Tùy chỉnh nút bấm */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s;
     }
     </style>
     """,
@@ -101,15 +127,14 @@ is_teacher = admin_password == MY_PASSWORD
 
 st.sidebar.divider()
 
-# Khung thông tin tác giả
-st.sidebar.markdown("### Thông tin tác giả")
+# Khung thông tin tác giả cải tiến giao diện
 st.sidebar.markdown(
     """
     <div class="author-box">
-        <div class="author-text">Thầy Sơn dạy Toán</div>
-        <br>
-        <div class="author-text"><b>SĐT:</b> 0387533027</div>
-        <div class="author-text"><b>Địa chỉ:</b> Khe Sanh, Quảng Trị</div>
+        <div class="author-title">📌 Thông tin giáo viên</div>
+        <div class="author-text">👨‍🏫 <b>Thầy Sơn dạy Toán</b></div>
+        <div class="author-text">📞 <b>SĐT:</b> 0387533027</div>
+        <div class="author-text">📍 <b>Địa chỉ:</b> Khe Sanh, Quảng Trị</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -152,7 +177,7 @@ if is_teacher:
 
             status = st.selectbox("Trạng thái học phí", ["Chưa nộp", "Đã nộp"])
 
-            submitted = st.form_submit_button("Thêm học sinh")
+            submitted = st.form_submit_button("➕ Thêm học sinh mới")
             if submitted:
                 if name:
                     new_id = (
@@ -254,7 +279,7 @@ if is_teacher:
                     ),
                 )
 
-            if st.button("Cập nhật"):
+            if st.button("🔄 Cập nhật thông tin"):
                 st.session_state.students.loc[
                     student_row, "Số buổi đã học"
                 ] += add_sessions
@@ -266,7 +291,7 @@ if is_teacher:
                 st.rerun()
 
     elif menu == "Thống kê tài chính":
-        st.subheader("📊 Báo cáo học phí")
+        st.subheader("📊 Báo cáo học phí tổng quan")
 
         if st.session_state.students.empty:
             st.info("Chưa có dữ liệu để thống kê.")
@@ -322,10 +347,10 @@ else:
         )
     else:
         st.markdown(
-            "Vui lòng **nhập đầy đủ họ và tên** của bạn vào ô dưới đây để tra cứu:"
+            "Vui lòng **nhập đầy đủ họ và tên** của bạn vào ô dưới đây để tra cứu kết quả:"
         )
 
-        typed_name = st.text_input("Họ và tên của bạn:")
+        typed_name = st.text_input("🔍 Họ và tên của bạn:")
 
         if typed_name:
             df_students = st.session_state.students
@@ -345,8 +370,15 @@ else:
 
                     total_money = total_sessions * fee_per_session
 
-                    st.divider()
-                    st.markdown(f"### Kết quả tra cứu cho: **{s_name}**")
+                    # Bọc kết quả vào trong khung đẹp mắt
+                    st.markdown(
+                        f"""
+                        <div class="result-card">
+                            <h3>Kết quả tra cứu cho: <span style="color:#2563eb;">{s_name}</span></h3>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
                     col1, col2, col3 = st.columns(3)
                     col1.metric(
@@ -357,10 +389,10 @@ else:
                         "Tổng số tiền cần nộp", f"{total_money:,.0f} VNĐ"
                     )
 
-                    st.markdown("---")
+                    st.markdown("<br>", unsafe_allow_html=True)
                     if status == "Đã nộp":
                         st.success(
-                            "✅ **Trạng thái học phí:** Bạn đã hoàn thành học phí."
+                            "✅ **Trạng thái học phí:** Bạn đã hoàn thành học phí đầy đủ."
                         )
                     else:
                         st.error(
